@@ -143,6 +143,9 @@ final class LauncherStore: ObservableObject {
     @Published var appearanceMode: AppearanceMode = .system {
         didSet { save() }
     }
+    @Published var appLanguage: AppLanguage = .chinese {
+        didSet { save() }
+    }
     @Published var theme: AppThemePreset = .system {
         didSet { save() }
     }
@@ -334,6 +337,25 @@ final class LauncherStore: ObservableObject {
 
     var accentColor: Color {
         Color(hex: theme.accentHex)
+    }
+
+    func localized(_ chinese: String, _ english: String) -> String {
+        appLanguage == .english ? english : chinese
+    }
+
+    func settingsTitle(for pane: SettingsPane) -> String {
+        switch pane {
+        case .sidebar:
+            localized("侧边栏布局", "Sidebar")
+        case .layout:
+            localized("主界面布局", "Main Layout")
+        case .categories:
+            localized("软件分类设置", "Categories")
+        case .library:
+            localized("资源库与扫描", "Library & Scanning")
+        case .language:
+            localized("语言", "Language")
+        }
     }
 
     var surfaceColor: Color {
@@ -1361,11 +1383,16 @@ final class LauncherStore: ObservableObject {
         save()
     }
 
+    func resetLanguageSettings() {
+        appLanguage = .chinese
+    }
+
     func resetAllCustomizableSettings() {
         resetAppearanceSettings()
         resetLayoutPreferences()
         resetSidebarSettings()
         resetLibrarySettings()
+        resetLanguageSettings()
         save()
     }
 
@@ -1738,6 +1765,7 @@ final class LauncherStore: ObservableObject {
         hiddenAppIDs = Set(state.hiddenAppIDs)
         showWindowsUtilities = state.showWindowsUtilities
         showNames = state.showNames
+        appLanguage = state.appLanguage ?? .chinese
         iconScale = min(2.0, max(0.25, state.iconScale))
         appearanceMode = state.appearanceMode
         itemOrders = state.itemOrders ?? [:]
@@ -2014,7 +2042,8 @@ final class LauncherStore: ObservableObject {
             autoClassificationReasons: autoClassificationReasons,
             essentialAppIDs: Array(essentialAppIDs),
             selectionMemory: Array(selectionMemory),
-            classificationReferenceColumns: classificationReferenceColumns
+            classificationReferenceColumns: classificationReferenceColumns,
+            appLanguage: appLanguage
         )
         let generation = stateSaveGate.next()
         let gate = stateSaveGate

@@ -1122,7 +1122,10 @@ struct LibraryView: View {
                 Button {
                     openSettingsPane(pane)
                 } label: {
-                    Label("    \(pane.title)", systemImage: pane.symbol)
+                    Label(
+                        "    \(store.settingsTitle(for: pane))",
+                        systemImage: pane.symbol
+                    )
                 }
             }
         }

@@ -13,6 +13,7 @@ struct SettingsPanelView: View {
     private var _sidebarExpanded = State(initialValue: false)
     private var _categoriesExpanded = State(initialValue: false)
     private var _libraryExpanded = State(initialValue: false)
+    private var _languageExpanded = State(initialValue: false)
     private var _confirmation = State<SettingsConfirmation?>(initialValue: nil)
     private var _layoutName = State(initialValue: "")
     private var _selectedLayoutID = State<String?>(initialValue: nil)
@@ -84,6 +85,11 @@ struct SettingsPanelView: View {
         nonmutating set { _libraryExpanded.wrappedValue = newValue }
     }
 
+    private var languageExpanded: Bool {
+        get { _languageExpanded.wrappedValue }
+        nonmutating set { _languageExpanded.wrappedValue = newValue }
+    }
+
     private var confirmation: SettingsConfirmation? {
         get { _confirmation.wrappedValue }
         nonmutating set { _confirmation.wrappedValue = newValue }
@@ -122,6 +128,10 @@ struct SettingsPanelView: View {
 
     private var libraryBinding: Binding<Bool> {
         Binding(get: { libraryExpanded }, set: { libraryExpanded = $0 })
+    }
+
+    private var languageBinding: Binding<Bool> {
+        Binding(get: { languageExpanded }, set: { languageExpanded = $0 })
     }
 
     private var confirmationBinding: Binding<Bool> {
@@ -296,7 +306,7 @@ struct SettingsPanelView: View {
                                     )
                             }
 
-                        Text(pane.title)
+                        Text(store.settingsTitle(for: pane))
                             .font(.app(11.5, weight: activePane == pane ? .semibold : .medium))
                             .foregroundStyle(
                                 activePane == pane
@@ -349,6 +359,8 @@ struct SettingsPanelView: View {
             categoriesSection
         case .library:
             librarySection
+        case .language:
+            languageSection
         }
     }
 
@@ -568,7 +580,7 @@ struct SettingsPanelView: View {
 
     private var sidebarSection: some View {
         SettingsSection(
-            title: "侧边栏布局",
+            title: store.localized("侧边栏布局", "Sidebar"),
             symbol: SettingsPane.sidebar.symbol,
             isExpanded: sidebarBinding,
             accentColor: store.fontColor
@@ -777,7 +789,7 @@ struct SettingsPanelView: View {
 
     private var layoutSection: some View {
         SettingsSection(
-            title: "主界面布局",
+            title: store.localized("主界面布局", "Main Layout"),
             symbol: SettingsPane.layout.symbol,
             isExpanded: layoutBinding,
             accentColor: store.fontColor
@@ -1093,11 +1105,13 @@ struct SettingsPanelView: View {
         sidebarExpanded = pane == .sidebar
         categoriesExpanded = pane == .categories
         libraryExpanded = pane == .library
+        languageExpanded = pane == .language
     }
 
     private var categoriesSection: some View {
         SettingsSection(
-            title: "软件分类设置 · \(store.selectedSystem.title)",
+            title: store.localized("软件分类设置", "Categories")
+                + " · \(store.selectedSystem.title)",
             symbol: SettingsPane.categories.symbol,
             isExpanded: categoriesBinding,
             accentColor: store.fontColor
@@ -1257,7 +1271,7 @@ struct SettingsPanelView: View {
 
     private var librarySection: some View {
         SettingsSection(
-            title: "资源库与扫描",
+            title: store.localized("资源库与扫描", "Library & Scanning"),
             symbol: SettingsPane.library.symbol,
             isExpanded: libraryBinding,
             accentColor: store.fontColor
@@ -1322,6 +1336,45 @@ struct SettingsPanelView: View {
 
                 sectionResetButton("恢复资料库默认值") {
                     store.resetLibrarySettings()
+                }
+            }
+        }
+    }
+
+    private var languageSection: some View {
+        SettingsSection(
+            title: store.localized("语言", "Language"),
+            symbol: SettingsPane.language.symbol,
+            isExpanded: languageBinding,
+            accentColor: store.fontColor
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("界面语言切换会立即生效。应用名称、分类名称和文件夹名称属于你的数据，不会被自动翻译。")
+                    .font(.app(10))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Picker("", selection: $store.appLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.title).tag(language)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+
+                HStack {
+                    Text("当前语言")
+                        .font(.app(10.5))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(store.appLanguage.title)
+                        .font(.app(10.5, weight: .semibold))
+                }
+
+                sectionResetButton(
+                    store.localized("恢复语言默认值", "Reset Language")
+                ) {
+                    store.resetLanguageSettings()
                 }
             }
         }

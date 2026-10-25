@@ -83,6 +83,10 @@ struct RootView: View {
             }
         }
         .preferredColorScheme(preferredColorScheme)
+        .environment(
+            \.locale,
+            Locale(identifier: store.appLanguage.localeIdentifier)
+        )
         .environment(\.font, .app(12.5))
         .onReceive(NotificationCenter.default.publisher(for: .openMacAppBoxSettings)) { _ in
             withAnimation(.snappy(duration: 0.24)) {

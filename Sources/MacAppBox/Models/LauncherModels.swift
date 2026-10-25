@@ -130,6 +130,27 @@ enum AppearanceMode: String, CaseIterable, Codable, Identifiable {
     }
 }
 
+enum AppLanguage: String, CaseIterable, Codable, Identifiable {
+    case chinese
+    case english
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .chinese: "简体中文"
+        case .english: "English"
+        }
+    }
+
+    var localeIdentifier: String {
+        switch self {
+        case .chinese: "zh-Hans"
+        case .english: "en"
+        }
+    }
+}
+
 enum AppFontStyle: String, CaseIterable, Codable, Identifiable {
     case system
     case yahei
@@ -318,6 +339,7 @@ struct SavedLauncherState: Codable {
     var essentialAppIDs: [String]?
     var selectionMemory: [String]?
     var classificationReferenceColumns: Int?
+    var appLanguage: AppLanguage?
 }
 
 struct LayoutSnapshot: Identifiable, Codable {
@@ -363,6 +385,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     case layout
     case categories
     case library
+    case language
 
     var id: String { rawValue }
 
@@ -372,6 +395,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .layout: "主界面布局"
         case .categories: "软件分类设置"
         case .library: "资源库与扫描"
+        case .language: "语言"
         }
     }
 
@@ -381,6 +405,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .layout: "rectangle.grid.2x2.fill"
         case .categories: "square.grid.2x2.fill"
         case .library: "externaldrive.fill"
+        case .language: "globe"
         }
     }
 }

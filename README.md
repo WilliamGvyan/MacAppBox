@@ -12,9 +12,12 @@
 
 ![MacApp Box 关于页](docs/screenshots/about.png)
 
+![MacApp Box 中英语言切换](docs/screenshots/language-en.png)
+
 ## 当前版本
 
 - 原生 macOS 窗口，保留关闭、最小化、放大交通灯。
+- 设置内提供简体中文与 English 实时切换；应用名和自定义分类名保持原样。
 - `macOS / Windows` 两级系统切换。
 - macOS 与 Windows 各自保存独立的类别名称、顺序、锁定状态和应用归属；在一个系统改分类不会影响另一个系统。
 - 当前 Windows 分类已按用户要求清空到只保留「常用推荐」和兜底「未分类软件」；macOS 分类未改动。

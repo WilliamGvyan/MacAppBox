@@ -256,7 +256,10 @@ struct SidebarView: View {
                 Button {
                     openSettingsPane(pane)
                 } label: {
-                    Label("    \(pane.title)", systemImage: pane.symbol)
+                    Label(
+                        "    \(store.settingsTitle(for: pane))",
+                        systemImage: pane.symbol
+                    )
                 }
             }
         }
@@ -564,7 +567,10 @@ private struct CategorySidebarRow: View {
                 Button {
                     openSettingsPane(pane)
                 } label: {
-                    Label("    \(pane.title)", systemImage: pane.symbol)
+                    Label(
+                        "    \(store.settingsTitle(for: pane))",
+                        systemImage: pane.symbol
+                    )
                 }
             }
         }
