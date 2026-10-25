@@ -25,6 +25,16 @@ struct AppScanner {
             apps.append(app)
         }
 
+        for app in scanSelfMadeLibraryApps() where knownIDs.insert(app.id).inserted {
+            apps.append(app)
+            knownPaths.insert(canonicalPath(app.path))
+        }
+
+        for app in scanThirdPartyLibraryApps() where knownIDs.insert(app.id).inserted {
+            apps.append(app)
+            knownPaths.insert(canonicalPath(app.path))
+        }
+
         for app in scanMacApps(skipping: knownPaths) {
             if knownIDs.insert(app.id).inserted {
                 apps.append(app)
@@ -93,6 +103,174 @@ struct AppScanner {
                 )
             }
         }
+        return result
+    }
+
+    private func scanSelfMadeLibraryApps() -> [LauncherApp] {
+        let library = URL(
+            fileURLWithPath: LauncherConstants.selfMadeLibrary,
+            isDirectory: true
+        )
+        let macRoot = library.appendingPathComponent("macOS", isDirectory: true)
+        let windowsRoot = library.appendingPathComponent("Windows", isDirectory: true)
+        var result: [LauncherApp] = []
+        var seenIDs = Set<String>()
+
+        if let macs = try? fileManager.contentsOfDirectory(
+            at: macRoot,
+            includingPropertiesForKeys: nil
+        ) {
+            for url in macs where url.pathExtension.lowercased() == "app" {
+                let canonical = canonicalPath(url.path)
+                let bundleID = Bundle(url: url)?.bundleIdentifier ?? canonical
+                let appID = "own:\(bundleID)"
+                guard seenIDs.insert(appID).inserted else { continue }
+                let icon = cachedIcons[appID]
+                    ?? GeneratedAppIcon.icon(for: url, name: displayName(for: url) ?? "")
+                icon.size = NSSize(width: 128, height: 128)
+                result.append(
+                    LauncherApp(
+                        id: appID,
+                        name: displayName(for: url)
+                            ?? url.deletingPathExtension().lastPathComponent,
+                        path: url.path,
+                        platform: .macOS,
+                        origin: .selfMade,
+                        icon: icon,
+                        isWindowsUtility: false,
+                        hostName: nil
+                    )
+                )
+            }
+        }
+
+        guard let enumerator = fileManager.enumerator(
+            at: windowsRoot,
+            includingPropertiesForKeys: [.isRegularFileKey]
+        ) else { return result }
+
+        let inHouseRoot = windowsRoot
+            .appendingPathComponent("刷机程序/InHouse-Programs")
+            .path
+        let inHouseAllowed = [
+            inHouseRoot + "/刷机程序入口.exe",
+            inHouseRoot + "/川崎-Kawasaki/Kawasaki-KCMonitor/kawasaki_net_toggle.exe",
+            inHouseRoot + "/川崎-Kawasaki/Kawasaki-KCMonitor/tools/川崎刷机.exe"
+        ]
+        let skippedParts = [
+            "/drivers/",
+            "/engines/uarttest/",
+            "/tools/legacy/",
+            "/_build/out/",
+            "/_Launcher/out/",
+            "/com0com setup.exe"
+        ]
+
+        for case let url as URL in enumerator
+        where url.pathExtension.lowercased() == "exe" {
+            let path = url.path
+            if path.hasPrefix(inHouseRoot), !inHouseAllowed.contains(path) {
+                continue
+            }
+            if skippedParts.contains(where: { path.localizedCaseInsensitiveContains($0) }) {
+                continue
+            }
+            let canonical = canonicalPath(path)
+            let appID = "own-windows:\(canonical)"
+            guard seenIDs.insert(appID).inserted else { continue }
+            let icon = cachedIcons[appID]
+                ?? GeneratedAppIcon.icon(for: url, name: url.deletingPathExtension().lastPathComponent)
+            icon.size = NSSize(width: 128, height: 128)
+            result.append(
+                LauncherApp(
+                    id: appID,
+                    name: url.deletingPathExtension().lastPathComponent,
+                    path: path,
+                    platform: .windows,
+                    origin: .selfMade,
+                    icon: icon,
+                    isWindowsUtility: false,
+                    hostName: "自研软件"
+                )
+            )
+        }
+        return result
+    }
+
+    private func scanThirdPartyLibraryApps() -> [LauncherApp] {
+        let library = URL(
+            fileURLWithPath: LauncherConstants.thirdPartyLibrary,
+            isDirectory: true
+        )
+        let macRoot = library.appendingPathComponent("macOS", isDirectory: true)
+        let windowsRoot = library.appendingPathComponent("Windows", isDirectory: true)
+        var result: [LauncherApp] = []
+        var seenIDs = Set<String>()
+
+        if let macs = try? fileManager.contentsOfDirectory(
+            at: macRoot,
+            includingPropertiesForKeys: nil
+        ) {
+            for url in macs where url.pathExtension.lowercased() == "app" {
+                let canonical = canonicalPath(url.path)
+                let bundleID = Bundle(url: url)?.bundleIdentifier ?? canonical
+                let appID = "third:\(bundleID)"
+                guard seenIDs.insert(appID).inserted else { continue }
+                let name = displayName(for: url)
+                    ?? url.deletingPathExtension().lastPathComponent
+                let icon = cachedIcons[appID]
+                    ?? NSWorkspace.shared.icon(forFile: url.path)
+                icon.size = NSSize(width: 128, height: 128)
+                result.append(
+                    LauncherApp(
+                        id: appID,
+                        name: name,
+                        path: url.path,
+                        platform: .macOS,
+                        origin: .thirdParty,
+                        icon: icon,
+                        isWindowsUtility: false,
+                        hostName: nil
+                    )
+                )
+            }
+        }
+
+        if let folders = try? fileManager.contentsOfDirectory(
+            at: windowsRoot,
+            includingPropertiesForKeys: [.isDirectoryKey]
+        ) {
+            for folder in folders where folder.hasDirectoryPath {
+                let metadata = folder.appendingPathComponent(".macappbox-entry")
+                guard let relative = try? String(contentsOf: metadata, encoding: .utf8)
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                      !relative.isEmpty else { continue }
+                let exe = folder.appendingPathComponent(relative)
+                guard fileManager.fileExists(atPath: exe.path) else { continue }
+                let canonical = canonicalPath(exe.path)
+                let appID = "third-windows:\(canonical)"
+                guard seenIDs.insert(appID).inserted else { continue }
+                let icon = cachedIcons[appID]
+                    ?? GeneratedAppIcon.icon(
+                        for: exe,
+                        name: exe.deletingPathExtension().lastPathComponent
+                    )
+                icon.size = NSSize(width: 128, height: 128)
+                result.append(
+                    LauncherApp(
+                        id: appID,
+                        name: exe.deletingPathExtension().lastPathComponent,
+                        path: exe.path,
+                        platform: .windows,
+                        origin: .thirdParty,
+                        icon: icon,
+                        isWindowsUtility: false,
+                        hostName: "第三方软件"
+                    )
+                )
+            }
+        }
+
         return result
     }
 

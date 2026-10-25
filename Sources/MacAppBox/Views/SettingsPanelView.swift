@@ -1282,6 +1282,10 @@ struct SettingsPanelView: View {
                         .font(.app(10.5))
                         .foregroundStyle(.secondary)
                     Spacer()
+                    Button("导入第三方软件…") {
+                        presentThirdPartyImporter()
+                    }
+                    .font(.app(10.5, weight: .medium))
                     Button("重新扫描") {
                         store.refresh()
                     }
@@ -1338,6 +1342,31 @@ struct SettingsPanelView: View {
                     store.resetLibrarySettings()
                 }
             }
+        }
+    }
+
+    private func presentThirdPartyImporter() {
+        let panel = NSOpenPanel()
+        panel.title = "导入第三方软件"
+        panel.message = "选择 .app、.exe 或整个软件文件夹；带 DLL/资源文件时请选择整个文件夹。"
+        panel.prompt = "导入"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [
+            .applicationBundle,
+            .folder,
+            UTType(filenameExtension: "exe") ?? .data
+        ]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try store.importThirdPartySoftware(from: url)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "导入第三方软件失败"
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .warning
+            alert.runModal()
         }
     }
 

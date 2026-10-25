@@ -13,6 +13,7 @@ struct LibraryView: View {
     private var _groupingTargetID = State<String?>(initialValue: nil)
     private var _insertionPreview = State<LibraryInsertionPreview?>(initialValue: nil)
     private var _classificationDropTargetID = State<String?>(initialValue: nil)
+    private var _thirdPartyImportError = State<String?>(initialValue: nil)
 
     private let tileSpacing: CGFloat = 24
 
@@ -103,6 +104,13 @@ struct LibraryView: View {
         )
     }
 
+    private var thirdPartyImportErrorBinding: Binding<Bool> {
+        Binding(
+            get: { _thirdPartyImportError.wrappedValue != nil },
+            set: { if !$0 { _thirdPartyImportError.wrappedValue = nil } }
+        )
+    }
+
     private var displayedLibraryItems: [LibraryItem] {
         let items = store.currentLibraryItems
         guard let insertionPreview else { return items }
@@ -176,6 +184,9 @@ struct LibraryView: View {
             Divider()
             settingsMenuItems
             Divider()
+            Button("导入第三方软件…") {
+                importThirdPartySoftware()
+            }
             Button("重新扫描") {
                 store.refresh()
             }
@@ -209,6 +220,32 @@ struct LibraryView: View {
                 }
                 folderToRename = nil
             }
+        }
+        .alert("导入第三方软件失败", isPresented: thirdPartyImportErrorBinding) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text(_thirdPartyImportError.wrappedValue ?? "未知错误")
+        }
+    }
+
+    private func importThirdPartySoftware() {
+        let panel = NSOpenPanel()
+        panel.title = "导入第三方软件"
+        panel.message = "选择 .app、.exe 或整个软件文件夹；带 DLL/资源文件时请选择整个文件夹。"
+        panel.prompt = "导入"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [
+            .applicationBundle,
+            .folder,
+            UTType(filenameExtension: "exe") ?? .data
+        ]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try store.importThirdPartySoftware(from: url)
+        } catch {
+            _thirdPartyImportError.wrappedValue = error.localizedDescription
         }
     }
 
@@ -492,28 +529,31 @@ struct LibraryView: View {
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .contentShape(Rectangle())
-                                    .contextMenu {
-                                        Menu("移动到") {
-                                            ForEach(store.categories.filter {
-                                                $0.id != group.id &&
-                                                $0.id != AppCategory.frequentlyUsedID &&
-                                                $0.id != AppCategory.autoClassifiedID &&
-                                                $0.id != AppCategory.essentialsID
-                                            }) { category in
-                                                Button(category.name) {
-                                                    store.move([entry.id], to: category.id)
-                                                }
-                                            }
-                                        }
-                                    }
                                     .overlay {
                                         TextDragSurface(
                                             payload: "app:\(entry.id)",
                                             label: entry.name,
-                                            accentColor: NSColor(store.accentColor)
+                                            accentColor: NSColor(store.accentColor),
+                                            contextMenuItems: store.categories
+                                                .filter {
+                                                    $0.id != group.id &&
+                                                    $0.id != AppCategory.frequentlyUsedID &&
+                                                    $0.id != AppCategory.autoClassifiedID &&
+                                                    $0.id != AppCategory.essentialsID
+                                                }
+                                                .map { category in
+                                                    TextDragMenuItem(
+                                                        title: category.name
+                                                    ) {
+                                                        store.move(
+                                                            [entry.id],
+                                                            to: category.id
+                                                        )
+                                                    }
+                                                }
                                         )
                                     }
-                                    .help("拖到左侧类别调整分类")
+                                    .help("左键拖动，或右键移动到其他类别")
                                 }
                             }
                         }

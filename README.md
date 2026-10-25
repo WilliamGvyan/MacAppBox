@@ -14,10 +14,14 @@
 
 ![MacApp Box 中英语言切换](docs/screenshots/language-en.png)
 
+![MacApp Box 自研软件分类](docs/screenshots/selfmade-category.png)
+
 ## 当前版本
 
 - 原生 macOS 窗口，保留关闭、最小化、放大交通灯。
 - 设置内提供简体中文与 English 实时切换；应用名和自定义分类名保持原样。
+- 自动读取 `~/自研软件/程序库`，Mac 与 Windows 自研程序分别进入对应平台的“自研软件”分类。
+- 右键选择“导入第三方软件…”可把 `.app`、`.exe` 或整个软件文件夹移入 `~/第三方软件/程序库`，Windows 程序通过 Parallels 启动。
 - `macOS / Windows` 两级系统切换。
 - macOS 与 Windows 各自保存独立的类别名称、顺序、锁定状态和应用归属；在一个系统改分类不会影响另一个系统。
 - 当前 Windows 分类已按用户要求清空到只保留「常用推荐」和兜底「未分类软件」；macOS 分类未改动。

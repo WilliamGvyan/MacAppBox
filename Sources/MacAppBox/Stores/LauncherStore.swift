@@ -627,10 +627,15 @@ final class LauncherStore: ObservableObject {
         apps = result.apps
         filteredWindowsCount = result.filteredWindowsCount
 
-        for app in apps where assignments[app.id] == nil {
-            let categoryID = app.origin == .selfMade
-                ? AppCategory.selfMadeID
-                : AppCategory.unclassifiedID
+        for app in apps {
+            let current = assignments[app.id]
+            let needsAssignment = current == nil ||
+                ((app.origin == .selfMade || app.origin == .thirdParty) &&
+                    current == AppCategory.unclassifiedID)
+            guard needsAssignment else { continue }
+
+            let categoryID = preferredOriginCategoryID(for: app)
+                ?? AppCategory.unclassifiedID
             assignments[app.id] = categoryID
             recordAssignment(appID: app.id, categoryID: categoryID)
         }
@@ -1290,9 +1295,8 @@ final class LauncherStore: ObservableObject {
             uniqueKeysWithValues: apps.map { app in
                 (
                     app.id,
-                    app.origin == .selfMade
-                        ? AppCategory.selfMadeID
-                        : AppCategory.unclassifiedID
+                    preferredOriginCategoryID(for: app)
+                        ?? AppCategory.unclassifiedID
                 )
             }
         )
@@ -1422,7 +1426,178 @@ final class LauncherStore: ObservableObject {
             ?? LaunchStat(count: 0, lastLaunched: .distantPast)
         launchStats[app.id] = previous.recordingLaunch()
         save()
-        NSWorkspace.shared.open(URL(fileURLWithPath: app.path))
+        let url = URL(fileURLWithPath: app.path)
+        if app.platform == .windows,
+           url.pathExtension.lowercased() == "exe",
+           app.origin == .selfMade || app.origin == .thirdParty {
+            WindowsProgramLauncher.launch(hostURL: url) { [weak self] result in
+                if case .failure(let error) = result {
+                    self?.presentWindowsLaunchError(error, app: app)
+                }
+            }
+        } else {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @discardableResult
+    func importThirdPartySoftware(from source: URL) throws -> PlatformKind {
+        let root = URL(
+            fileURLWithPath: LauncherConstants.thirdPartyLibrary,
+            isDirectory: true
+        )
+        let macRoot = root.appendingPathComponent("macOS", isDirectory: true)
+        let windowsRoot = root.appendingPathComponent("Windows", isDirectory: true)
+        let source = source.standardizedFileURL
+        let extensionName = source.pathExtension.lowercased()
+
+        if source.path.hasPrefix(root.path + "/") {
+            let platform: PlatformKind = source.path.hasPrefix(macRoot.path + "/")
+                ? .macOS : .windows
+            selectSystem(platform)
+            selectedCategoryID = AppCategory.thirdPartyID
+            refresh()
+            return platform
+        }
+
+        let platform: PlatformKind
+        let destination: URL
+        if extensionName == "app" {
+            platform = .macOS
+            try FileManager.default.createDirectory(
+                at: macRoot,
+                withIntermediateDirectories: true
+            )
+            destination = uniqueDestination(
+                macRoot.appendingPathComponent(source.lastPathComponent)
+            )
+            try FileManager.default.moveItem(at: source, to: destination)
+        } else if extensionName == "exe" {
+            platform = .windows
+            try FileManager.default.createDirectory(
+                at: windowsRoot,
+                withIntermediateDirectories: true
+            )
+            let folder = uniqueDestination(
+                windowsRoot.appendingPathComponent(
+                    source.deletingPathExtension().lastPathComponent,
+                    isDirectory: true
+                )
+            )
+            try FileManager.default.createDirectory(
+                at: folder,
+                withIntermediateDirectories: true
+            )
+            destination = folder.appendingPathComponent(source.lastPathComponent)
+            try FileManager.default.moveItem(at: source, to: destination)
+            try destination.lastPathComponent.write(
+                to: folder.appendingPathComponent(".macappbox-entry"),
+                atomically: true,
+                encoding: .utf8
+            )
+        } else {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(
+                atPath: source.path,
+                isDirectory: &isDirectory
+            ), isDirectory.boolValue else {
+                throw ThirdPartyImportError.unsupported
+            }
+            let entry = try findEntryExecutable(in: source)
+            let relativeEntry = String(entry.path.dropFirst(source.path.count))
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            platform = .windows
+            try FileManager.default.createDirectory(
+                at: windowsRoot,
+                withIntermediateDirectories: true
+            )
+            destination = uniqueDestination(
+                windowsRoot.appendingPathComponent(
+                    source.lastPathComponent,
+                    isDirectory: true
+                )
+            )
+            try FileManager.default.moveItem(at: source, to: destination)
+            try relativeEntry.write(
+                to: destination.appendingPathComponent(".macappbox-entry"),
+                atomically: true,
+                encoding: .utf8
+            )
+        }
+
+        selectSystem(platform)
+        selectedCategoryID = AppCategory.thirdPartyID
+        lastLayoutMessage = "已导入第三方软件：\(destination.lastPathComponent)"
+        refresh()
+        return platform
+    }
+
+    private func uniqueDestination(_ preferred: URL) -> URL {
+        guard FileManager.default.fileExists(atPath: preferred.path) else {
+            return preferred
+        }
+        let base = preferred.deletingPathExtension()
+        let extensionPart = preferred.pathExtension
+        for index in 2...999 {
+            let suffix = extensionPart.isEmpty
+                ? " \(index)"
+                : " \(index).\(extensionPart)"
+            let candidate = URL(fileURLWithPath: base.path + suffix)
+            if !FileManager.default.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+        }
+        return URL(fileURLWithPath: base.path + " \(UUID().uuidString)")
+    }
+
+    private func findEntryExecutable(in folder: URL) throws -> URL {
+        let skipped = ["setup", "install", "unins", "update", "helper", "redist"]
+        let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: folder,
+            includingPropertiesForKeys: keys
+        ) else {
+            throw ThirdPartyImportError.noExecutable
+        }
+        var candidates: [(url: URL, size: Int)] = []
+        for case let url as URL in enumerator
+        where url.pathExtension.lowercased() == "exe" {
+            let lower = url.lastPathComponent.lowercased()
+            if skipped.contains(where: { lower.contains($0) }) {
+                continue
+            }
+            let size = (try? url.resourceValues(forKeys: Set(keys)).fileSize) ?? 0
+            candidates.append((url, size))
+        }
+        guard let best = candidates.max(by: { $0.size < $1.size }) else {
+            throw ThirdPartyImportError.noExecutable
+        }
+        return best.url
+    }
+
+    private func presentWindowsLaunchError(
+        _ error: Error,
+        app: LauncherApp
+    ) {
+        let alert = NSAlert()
+        alert.messageText = "无法启动 \(app.name)"
+        alert.informativeText = error.localizedDescription
+        alert.alertStyle = .warning
+        alert.runModal()
+    }
+
+    enum ThirdPartyImportError: LocalizedError {
+        case unsupported
+        case noExecutable
+
+        var errorDescription: String? {
+            switch self {
+            case .unsupported:
+                "请选择 .app、.exe 或包含 Windows 程序的文件夹"
+            case .noExecutable:
+                "所选文件夹中没有找到可用的 exe"
+            }
+        }
     }
 
     func applyAutomaticClassification() {
@@ -1855,9 +2030,8 @@ final class LauncherStore: ObservableObject {
         }.count
 
         for app in apps where assignments[app.id] == nil {
-            let categoryID = app.origin == .selfMade
-                ? AppCategory.selfMadeID
-                : AppCategory.unclassifiedID
+            let categoryID = preferredOriginCategoryID(for: app)
+                ?? AppCategory.unclassifiedID
             assignments[app.id] = categoryID
             recordAssignment(appID: app.id, categoryID: categoryID)
         }
@@ -1962,7 +2136,7 @@ final class LauncherStore: ObservableObject {
             image.size = NSSize(width: 128, height: 128)
             return image
         }
-        if app.origin == .selfMade {
+        if app.origin == .selfMade || app.origin == .thirdParty {
             return GeneratedAppIcon.icon(
                 for: URL(fileURLWithPath: app.path),
                 name: app.name
@@ -2159,6 +2333,18 @@ final class LauncherStore: ObservableObject {
             let insertionIndex = learningIndex ?? unclassifiedIndex ?? categories.endIndex
             categories.insert(.essentials, at: insertionIndex)
         }
+        if !categories.contains(where: { $0.id == AppCategory.thirdPartyID }) {
+            let selfMadeIndex = categories.firstIndex {
+                $0.id == AppCategory.selfMadeID
+            }
+            let unclassifiedIndex = categories.firstIndex {
+                $0.id == AppCategory.unclassifiedID
+            }
+            let insertionIndex = unclassifiedIndex
+                ?? selfMadeIndex.map { min(categories.count, $0 + 1) }
+                ?? categories.endIndex
+            categories.insert(.thirdParty, at: insertionIndex)
+        }
         if !categories.contains(where: { $0.id == AppCategory.unclassifiedID }) {
             categories.append(.unclassified)
         }
@@ -2172,10 +2358,8 @@ final class LauncherStore: ObservableObject {
             )
             let current = assignments[app.id] ?? AppCategory.unclassifiedID
             guard validIDs.contains(current) else {
-                let preferred = app.origin == .selfMade &&
-                    validIDs.contains(AppCategory.selfMadeID)
-                    ? AppCategory.selfMadeID
-                    : AppCategory.unclassifiedID
+                let preferred = preferredOriginCategoryID(for: app)
+                    ?? AppCategory.unclassifiedID
                 assignments[app.id] = validIDs.contains(preferred)
                     ? preferred
                     : AppCategory.unclassifiedID
@@ -2185,6 +2369,37 @@ final class LauncherStore: ObservableObject {
                 )
                 continue
             }
+        }
+    }
+
+    private func selfMadeCategoryID(for platform: PlatformKind) -> String? {
+        let platformCategories = categorySets[platform] ?? []
+        if platformCategories.contains(where: { $0.id == AppCategory.selfMadeID }) {
+            return AppCategory.selfMadeID
+        }
+        return platformCategories.first {
+            $0.name.compare("自研软件", options: .caseInsensitive) == .orderedSame
+        }?.id
+    }
+
+    private func thirdPartyCategoryID(for platform: PlatformKind) -> String? {
+        let platformCategories = categorySets[platform] ?? []
+        if platformCategories.contains(where: { $0.id == AppCategory.thirdPartyID }) {
+            return AppCategory.thirdPartyID
+        }
+        return platformCategories.first {
+            $0.name.compare("第三方软件", options: .caseInsensitive) == .orderedSame
+        }?.id
+    }
+
+    private func preferredOriginCategoryID(for app: LauncherApp) -> String? {
+        switch app.origin {
+        case .selfMade:
+            selfMadeCategoryID(for: app.platform)
+        case .thirdParty:
+            thirdPartyCategoryID(for: app.platform)
+        case .macOS, .windows:
+            nil
         }
     }
 

@@ -26,6 +26,7 @@ enum AppOrigin: String, Codable {
     case macOS
     case windows
     case selfMade
+    case thirdParty
 }
 
 struct LauncherApp: Identifiable {
@@ -93,6 +94,12 @@ struct AppCategory: Identifiable, Codable, Hashable {
         isNameLocked: false
     )
 
+    static let thirdParty = AppCategory(
+        id: "third-party",
+        name: "第三方软件",
+        isBuiltIn: true
+    )
+
     static let defaults: [AppCategory] = [
         AppCategory(id: "frequently-used", name: "常用推荐", isBuiltIn: true),
         .autoClassified,
@@ -101,6 +108,7 @@ struct AppCategory: Identifiable, Codable, Hashable {
         AppCategory(id: "audio", name: "音频娱乐", isBuiltIn: true),
         AppCategory(id: "development", name: "软件开发", isBuiltIn: true),
         AppCategory(id: "self-made", name: "自研软件", isBuiltIn: true),
+        .thirdParty,
         AppCategory(id: "system", name: "系统软件", isBuiltIn: true),
         .unclassified
     ]
@@ -467,6 +475,7 @@ extension AppCategory {
     static let autoClassifiedID = autoClassified.id
     static let essentialsID = essentials.id
     static let selfMadeID = "self-made"
+    static let thirdPartyID = "third-party"
     static let frequentlyUsedID = "frequently-used"
     static let learningID = "learning"
 }
@@ -474,6 +483,12 @@ extension AppCategory {
 enum LauncherConstants {
     static let bundleIdentifier = "com.williamgvyan.MacAppBox"
     static let stateDirectoryName = "MacApp Box"
+    static var selfMadeLibrary: String {
+        NSString(string: "~/自研软件/程序库").expandingTildeInPath
+    }
+    static var thirdPartyLibrary: String {
+        NSString(string: "~/第三方软件/程序库").expandingTildeInPath
+    }
     static var selfMadeRegistry: String {
         let current = NSString(
             string: "~/Library/Application Support/自研软件/清单.txt"

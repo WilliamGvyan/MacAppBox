@@ -1,10 +1,28 @@
 import AppKit
 import SwiftUI
 
+struct TextDragMenuItem {
+    let title: String
+    let action: () -> Void
+}
+
 struct TextDragSurface: NSViewRepresentable {
     let payload: String
     let label: String
     let accentColor: NSColor
+    let contextMenuItems: [TextDragMenuItem]
+
+    init(
+        payload: String,
+        label: String,
+        accentColor: NSColor,
+        contextMenuItems: [TextDragMenuItem] = []
+    ) {
+        self.payload = payload
+        self.label = label
+        self.accentColor = accentColor
+        self.contextMenuItems = contextMenuItems
+    }
 
     func makeNSView(context: Context) -> TextDragSurfaceView {
         let view = TextDragSurfaceView()
@@ -20,6 +38,7 @@ struct TextDragSurface: NSViewRepresentable {
         view.payload = payload
         view.label = label
         view.accentColor = accentColor
+        view.contextMenuItems = contextMenuItems
     }
 }
 
@@ -27,9 +46,11 @@ final class TextDragSurfaceView: NSView, NSDraggingSource {
     var payload = ""
     var label = ""
     var accentColor = NSColor.controlAccentColor
+    var contextMenuItems: [TextDragMenuItem] = []
 
     private var startPoint: NSPoint?
     private var startedDragging = false
+    private var menuTargets: [TextDragMenuTarget] = []
 
     override func mouseDown(with event: NSEvent) {
         startPoint = convert(event.locationInWindow, from: nil)
@@ -66,7 +87,28 @@ final class TextDragSurfaceView: NSView, NSDraggingSource {
     }
 
     override func rightMouseDown(with event: NSEvent) {
-        nextResponder?.rightMouseDown(with: event)
+        guard !contextMenuItems.isEmpty else {
+            nextResponder?.rightMouseDown(with: event)
+            return
+        }
+
+        let menu = NSMenu()
+        let rootItem = NSMenuItem(title: "移动到", action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        menuTargets = contextMenuItems.map { item in
+            let target = TextDragMenuTarget(action: item.action)
+            let menuItem = NSMenuItem(
+                title: item.title,
+                action: #selector(TextDragMenuTarget.invoke(_:)),
+                keyEquivalent: ""
+            )
+            menuItem.target = target
+            submenu.addItem(menuItem)
+            return target
+        }
+        rootItem.submenu = submenu
+        menu.addItem(rootItem)
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
     }
 
     func draggingSession(
@@ -102,5 +144,17 @@ final class TextDragSurfaceView: NSView, NSDraggingSource {
         )
         image.unlockFocus()
         return image
+    }
+}
+
+private final class TextDragMenuTarget: NSObject {
+    private let action: () -> Void
+
+    init(action: @escaping () -> Void) {
+        self.action = action
+    }
+
+    @objc func invoke(_ sender: Any?) {
+        action()
     }
 }
