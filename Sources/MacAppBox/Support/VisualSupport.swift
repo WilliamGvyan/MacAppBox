@@ -1,6 +1,13 @@
 import AppKit
 import SwiftUI
 
+final class MainWindowRegistry {
+    static let shared = MainWindowRegistry()
+    var window: NSWindow?
+
+    private init() {}
+}
+
 struct VisualEffectView: NSViewRepresentable {
     var material: NSVisualEffectView.Material
     var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
@@ -39,6 +46,7 @@ struct WindowConfigurator: NSViewRepresentable {
 
     private func configure(window: NSWindow?) {
         guard let window else { return }
+        MainWindowRegistry.shared.window = window
         window.title = "MacApp Box"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
@@ -47,6 +55,8 @@ struct WindowConfigurator: NSViewRepresentable {
         window.isOpaque = false
         window.alphaValue = 1
         window.isMovableByWindowBackground = true
+        window.isReleasedWhenClosed = false
+        window.hidesOnDeactivate = false
     }
 }
 

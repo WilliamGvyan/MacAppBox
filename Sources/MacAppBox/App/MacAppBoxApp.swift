@@ -7,13 +7,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         if isBackgroundScan {
-            NSApp.setActivationPolicy(.prohibited)
+            NSApp.setActivationPolicy(.accessory)
         }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !isBackgroundScan else {
-            NSApp.setActivationPolicy(.prohibited)
+            NSApp.setActivationPolicy(.accessory)
             for delay in [0.0, 0.1, 0.35, 0.8, 1.4] {
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                     NSApp.windows.forEach {
@@ -42,12 +42,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         NSApp.setActivationPolicy(.regular)
         for delay in [0.0, 0.15, 0.4] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                NSApp.windows.forEach {
-                    $0.alphaValue = 1
-                    $0.orderFront(nil)
-                }
-                NSApp.windows.first?.makeKey()
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.bringMainWindowToFront(of: NSApp)
             }
         }
         NSApp.activate(ignoringOtherApps: true)
@@ -57,12 +53,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ sender: NSApplication,
         hasVisibleWindows flag: Bool
     ) -> Bool {
-        guard !isBackgroundScan else { return false }
-        sender.windows.forEach { $0.alphaValue = 1 }
-        if !flag {
-            sender.windows.first?.makeKeyAndOrderFront(nil)
+        if isBackgroundScan {
+            launchForegroundInstance()
+            return true
         }
+
+        return bringMainWindowToFront(of: sender)
+    }
+
+    @discardableResult
+    private func bringMainWindowToFront(of application: NSApplication) -> Bool {
+        application.setActivationPolicy(.regular)
+        var windows = application.windows.filter {
+            $0.title == "MacApp Box" || $0.canBecomeMain
+        }
+        if let registered = MainWindowRegistry.shared.window,
+           !windows.contains(where: { $0 === registered }) {
+            windows.append(registered)
+        }
+        guard !windows.isEmpty else { return false }
+        for window in windows {
+            window.alphaValue = 1
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+            window.makeKeyAndOrderFront(nil)
+        }
+        if let main = windows.first(where: { $0.title == "MacApp Box" }) ?? windows.first {
+            main.makeKeyAndOrderFront(nil)
+        }
+        application.activate(ignoringOtherApps: true)
         return true
+    }
+
+    private func launchForegroundInstance() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(
+            at: Bundle.main.bundleURL,
+            configuration: configuration
+        ) { _, _ in
+            DispatchQueue.main.async {
+                NSApp.terminate(nil)
+            }
+        }
     }
 }
 
