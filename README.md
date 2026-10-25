@@ -4,6 +4,14 @@
 
 一个面向 macOS 的应用启动器，按操作系统、类别和文件夹组织已安装应用。
 
+## 实际运行截图
+
+![MacApp Box 主界面](docs/screenshots/main.png)
+
+![MacApp Box 设置面板](docs/screenshots/settings.png)
+
+![MacApp Box 关于页](docs/screenshots/about.png)
+
 ## 当前版本
 
 - 原生 macOS 窗口，保留关闭、最小化、放大交通灯。

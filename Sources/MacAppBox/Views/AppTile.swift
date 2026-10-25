@@ -24,6 +24,38 @@ struct AppTile: View {
     }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    init(
+        app: LauncherApp,
+        isSelected: Bool,
+        showName: Bool,
+        iconSize: CGFloat,
+        nameSize: CGFloat,
+        accentColor: Color,
+        fontColor: Color,
+        isGroupingTarget: Bool,
+        insertionEdge: AppInsertionEdge?,
+        dragHoldDuration: TimeInterval,
+        dragPayload: @escaping () -> String,
+        cancelDrag: @escaping () -> Void,
+        select: @escaping (Bool) -> Void,
+        open: @escaping () -> Void
+    ) {
+        self.app = app
+        self.isSelected = isSelected
+        self.showName = showName
+        self.iconSize = iconSize
+        self.nameSize = nameSize
+        self.accentColor = accentColor
+        self.fontColor = fontColor
+        self.isGroupingTarget = isGroupingTarget
+        self.insertionEdge = insertionEdge
+        self.dragHoldDuration = dragHoldDuration
+        self.dragPayload = dragPayload
+        self.cancelDrag = cancelDrag
+        self.select = select
+        self.open = open
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             ZStack(alignment: .topTrailing) {
@@ -148,6 +180,32 @@ struct FolderTile: View {
     private var isHovered: Bool {
         get { _isHovered.wrappedValue }
         nonmutating set { _isHovered.wrappedValue = newValue }
+    }
+
+    init(
+        store: LauncherStore,
+        folder: AppFolder,
+        iconSize: CGFloat,
+        nameSize: CGFloat,
+        accentColor: Color,
+        fontColor: Color,
+        showName: Bool,
+        dragHoldDuration: TimeInterval,
+        dragPayload: @escaping () -> String,
+        cancelDrag: @escaping () -> Void,
+        open: @escaping () -> Void
+    ) {
+        self.store = store
+        self.folder = folder
+        self.iconSize = iconSize
+        self.nameSize = nameSize
+        self.accentColor = accentColor
+        self.fontColor = fontColor
+        self.showName = showName
+        self.dragHoldDuration = dragHoldDuration
+        self.dragPayload = dragPayload
+        self.cancelDrag = cancelDrag
+        self.open = open
     }
 
     private var folderApps: [LauncherApp] {

@@ -18,6 +18,16 @@ struct SettingsPanelView: View {
     private var _selectedLayoutID = State<String?>(initialValue: nil)
     private var _activePane = State(initialValue: SettingsPane.sidebar)
 
+    init(
+        store: LauncherStore,
+        isPresented: Binding<Bool>,
+        initialSection: SettingsPane
+    ) {
+        self.store = store
+        self._isPresented = isPresented
+        self.initialSection = initialSection
+    }
+
     private var newCategoryName: String {
         get { _newCategoryName.wrappedValue }
         nonmutating set { _newCategoryName.wrappedValue = newValue }

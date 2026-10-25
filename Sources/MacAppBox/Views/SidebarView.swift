@@ -11,6 +11,16 @@ struct SidebarView: View {
     private var _draggedCategoryID = State<String?>(initialValue: nil)
     private var _showingAbout = State(initialValue: false)
 
+    init(
+        store: LauncherStore,
+        showSettings: Binding<Bool>,
+        openSettingsPane: @escaping (SettingsPane) -> Void
+    ) {
+        self.store = store
+        self._showSettings = showSettings
+        self.openSettingsPane = openSettingsPane
+    }
+
     private var showAddCategory: Bool {
         get { _showAddCategory.wrappedValue }
         nonmutating set { _showAddCategory.wrappedValue = newValue }
@@ -325,6 +335,18 @@ private struct CategorySidebarRow: View {
     private var _isHovered = State(initialValue: false)
     private var _showRename = State(initialValue: false)
     private var _renameText = State(initialValue: "")
+
+    init(
+        store: LauncherStore,
+        category: AppCategory,
+        draggedCategoryID: Binding<String?>,
+        openSettingsPane: @escaping (SettingsPane) -> Void
+    ) {
+        self.store = store
+        self.category = category
+        self._draggedCategoryID = draggedCategoryID
+        self.openSettingsPane = openSettingsPane
+    }
 
     private var isDropTarget: Bool {
         get { _isDropTarget.wrappedValue }

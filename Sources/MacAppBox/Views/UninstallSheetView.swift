@@ -13,6 +13,11 @@ struct UninstallSheetView: View {
     private var _isRemoving = State(initialValue: false)
     private var _errorMessage = State<String?>(initialValue: nil)
 
+    init(store: LauncherStore, app: LauncherApp) {
+        self.store = store
+        self.app = app
+    }
+
     private var items: [UninstallItem] {
         get { _items.wrappedValue }
         nonmutating set { _items.wrappedValue = newValue }

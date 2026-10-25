@@ -16,6 +16,16 @@ struct LibraryView: View {
 
     private let tileSpacing: CGFloat = 24
 
+    init(
+        store: LauncherStore,
+        showSettings: Binding<Bool>,
+        openSettingsPane: @escaping (SettingsPane) -> Void
+    ) {
+        self.store = store
+        self._showSettings = showSettings
+        self.openSettingsPane = openSettingsPane
+    }
+
     private var activeSheet: LibrarySheet? {
         get { _activeSheet.wrappedValue }
         nonmutating set { _activeSheet.wrappedValue = newValue }

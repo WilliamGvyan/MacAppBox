@@ -12,6 +12,11 @@ struct FolderContentsView: View {
     private var _renameText = State(initialValue: "")
     private var _insertionPreview = State<FolderInsertionPreview?>(initialValue: nil)
 
+    init(store: LauncherStore, initialFolder: AppFolder) {
+        self.store = store
+        self.initialFolder = initialFolder
+    }
+
     private var folder: AppFolder? {
         store.folders.first { $0.id == initialFolder.id }
     }

@@ -6,6 +6,10 @@ struct RootView: View {
     private var _showingSettings = State(initialValue: false)
     private var _settingsPane = State(initialValue: SettingsPane.sidebar)
 
+    init(store: LauncherStore) {
+        self.store = store
+    }
+
     private var showingSettings: Bool {
         get { _showingSettings.wrappedValue }
         nonmutating set { _showingSettings.wrappedValue = newValue }
