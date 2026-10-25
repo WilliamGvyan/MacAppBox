@@ -86,6 +86,10 @@ script/       构建、图标和 LaunchAgent 脚本
 
 推送到 GitHub 后，GitHub Actions 会在 macOS 上执行 `swift build` 和推荐逻辑验证。
 
+## 支持与反馈
+
+社区版免费，可通过 [Issues](https://github.com/WilliamGvyan/MacAppBox/issues) 反馈 Bug，或在 [Discussions](https://github.com/WilliamGvyan/MacAppBox/discussions) 交流使用方式。付费支持与 Pro 增强版计划见 [SUPPORT.md](SUPPORT.md)。
+
 ## 仍待补充的系统级能力
 
 - 全屏模式、分页浏览和屏幕选择。
