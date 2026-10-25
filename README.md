@@ -1,5 +1,7 @@
 # MacApp Box
 
+[![Build](https://github.com/WilliamGvyan/MacAppBox/actions/workflows/build.yml/badge.svg)](https://github.com/WilliamGvyan/MacAppBox/actions/workflows/build.yml)
+
 一个面向 macOS 的应用启动器，按操作系统、类别和文件夹组织已安装应用。
 
 ## 当前版本
