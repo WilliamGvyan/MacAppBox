@@ -1,0 +1,234 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 1242px;
+  height: 1656px;
+  overflow: hidden;
+}
+
+body {
+  color: #18233a;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  background:
+    radial-gradient(circle at 86% 9%, rgba(76, 142, 255, 0.23), transparent 27%),
+    radial-gradient(circle at 7% 81%, rgba(249, 171, 84, 0.19), transparent 31%),
+    linear-gradient(145deg, #f8f7f2 0%, #edf3ff 100%);
+}
+
+.slide {
+  position: relative;
+  width: 1242px;
+  height: 1656px;
+  padding: 92px 82px 76px;
+  overflow: hidden;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  border: 1px solid rgba(39, 100, 217, 0.18);
+  border-radius: 999px;
+  color: #225fc7;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2f7cf6;
+  box-shadow: 0 0 0 7px rgba(47, 124, 246, 0.12);
+}
+
+h1 {
+  margin: 36px 0 22px;
+  font-size: 98px;
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+  font-weight: 800;
+}
+
+h2 {
+  margin: 34px 0 20px;
+  font-size: 72px;
+  line-height: 1.14;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+}
+
+.accent {
+  color: #246ce0;
+}
+
+.lead {
+  max-width: 960px;
+  margin: 0;
+  color: #536174;
+  font-size: 32px;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.window {
+  position: relative;
+  margin-top: 54px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 34px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 38px 90px rgba(31, 55, 95, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.window img {
+  display: block;
+  width: 100%;
+  border-radius: 22px;
+}
+
+.window.small {
+  width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 43px;
+}
+
+.chip {
+  padding: 17px 25px;
+  border: 1px solid rgba(31, 58, 98, 0.1);
+  border-radius: 20px;
+  color: #30425f;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 27px;
+  font-weight: 650;
+}
+
+.bottom {
+  position: absolute;
+  left: 82px;
+  right: 82px;
+  bottom: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6c788a;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.brand {
+  color: #1d5fc9;
+  font-family: "SF Pro Display", "Helvetica Neue", sans-serif;
+  font-size: 31px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.problem-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 38px;
+}
+
+.panel {
+  min-height: 230px;
+  padding: 34px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(31, 58, 98, 0.09);
+}
+
+.panel h3 {
+  margin: 0 0 20px;
+  font-size: 34px;
+  line-height: 1.25;
+}
+
+.panel p {
+  margin: 0;
+  color: #566479;
+  font-size: 26px;
+  line-height: 1.55;
+}
+
+.panel.problem h3 {
+  color: #b15a36;
+}
+
+.panel.solution h3 {
+  color: #246ce0;
+}
+
+.repo-card {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  margin-top: 46px;
+  padding: 38px;
+  border-radius: 34px;
+  color: #fff;
+  background: linear-gradient(135deg, #17233c, #2359a9);
+  box-shadow: 0 32px 80px rgba(26, 58, 111, 0.27);
+}
+
+.repo-card img {
+  width: 250px;
+  height: 250px;
+  padding: 12px;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.repo-copy strong {
+  display: block;
+  margin-bottom: 15px;
+  font-family: "SF Pro Display", "Helvetica Neue", sans-serif;
+  font-size: 47px;
+  letter-spacing: -0.045em;
+}
+
+.repo-copy span {
+  display: block;
+  color: rgba(255, 255, 255, 0.78);
+  font-family: "SF Pro Display", "Helvetica Neue", sans-serif;
+  font-size: 25px;
+  line-height: 1.55;
+}
+
+.note {
+  margin-top: 35px;
+  padding: 26px 30px;
+  border-left: 6px solid #f09a48;
+  border-radius: 0 18px 18px 0;
+  color: #645a50;
+  background: rgba(255, 248, 238, 0.78);
+  font-size: 24px;
+  line-height: 1.55;
+}
+
+.number {
+  position: absolute;
+  right: 82px;
+  top: 93px;
+  color: rgba(42, 67, 104, 0.32);
+  font-family: "SF Pro Display", sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
